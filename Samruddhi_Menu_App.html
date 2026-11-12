@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Samruddhi Menu</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#6b0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Samruddhi">
 <style>
 :root{--maroon:#6b0f1a;--gold:#c9962b;--cream:#fbf5e6;--ink:#2a1a14;--purple:#4b1c5c;--line:#e6d9bd;--paper:#fffdf7}
 *{box-sizing:border-box}
@@ -721,6 +727,7 @@ function driveCard(){
     <p id="gStatus" class="muted" style="font-size:13px">${esc(gMsg||(gTok?'Connected':'Abhi connect nahi hai'))}</p></div>`;
 }
 
+if('serviceWorker' in navigator && location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
 loadAutoFile().then(()=>render());
 db=load();
 render();
