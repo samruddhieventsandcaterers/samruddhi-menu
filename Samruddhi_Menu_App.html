@@ -228,7 +228,7 @@ function groupItems(items){
 }
 function itemTable(s,i,j){
   if(!s.items.length)return `<p class="muted">—</p>`;
-  return `<table class="itbl"><thead><tr><th>${t('itemCol')}</th><th>${t('itemName')}</th><th></th></tr></thead><tbody>${groupItems(s.items).map(g=>g.rows.map((r,ri)=>`<tr>${ri===0?`<td class="cat" rowspan="${g.rows.length}">${esc(g.c||'—')}</td>`:''}<td class="it">${esc(itm(r.x))}</td><td class="ac"><button onclick="renSessItem(${i},${j},${r.k})" title="Rename">✎</button><button onclick="mvItem(${i},${j},${r.k},-1)">↑</button><button onclick="mvItem(${i},${j},${r.k},1)">↓</button><button onclick="rmItem(${i},${j},${r.k})">✕</button></td></tr>`).join('')).join('')}</tbody></table>`;
+  return `<table class="itbl"><thead><tr><th>${t('itemCol')}</th><th>${t('itemName')}</th><th></th></tr></thead><tbody>${groupItems(s.items).map(g=>g.rows.map((r,ri)=>`<tr>${ri===0?`<td class="cat" rowspan="${g.rows.length}">${esc(catDisp(g.c)||'—')}</td>`:''}<td class="it">${esc(itm(r.x))}</td><td class="ac"><button onclick="renSessItem(${i},${j},${r.k})" title="Rename">✎</button><button onclick="mvItem(${i},${j},${r.k},-1)">↑</button><button onclick="mvItem(${i},${j},${r.k},1)">↓</button><button onclick="rmItem(${i},${j},${r.k})">✕</button></td></tr>`).join('')).join('')}</tbody></table>`;
 }
 function setDays(n){
   const g=gcur();n=+n;
@@ -271,7 +271,7 @@ function picker(g){
   const a=ui.act;
   if(!a||!g.days[a.i]||!g.days[a.i].sessions[a.j])return '';
   const s=g.days[a.i].sessions[a.j];
-  const cats=db.menu.map((c,k)=>`<button class="chip ${k===ui.cat?'on':''}" onclick="ui.cat=${k};ui.cq='';render()">${esc(c.en)}</button>`).join('');
+  const cats=db.menu.map((c,k)=>`<button class="chip ${k===ui.cat?'on':''}" onclick="ui.cat=${k};ui.cq='';render()">${esc(catDisp(c.en))}</button>`).join('');
   return `<div class="picker" id="picker"><div class="row"><b>${t('addItems')}: ${esc(hdn(s.h))}</b><button class="ghost sm" onclick="ui.act=null;render()">✕</button></div>
     <div class="chips">${cats}</div>
     <input id="iq" placeholder="${t('searchItem')}" value="${esc(ui.cq)}" oninput="ui.cq=this.value;$('#pl').innerHTML=pList()">
@@ -282,7 +282,7 @@ function pList(){
   const pool=q?db.menu.flatMap(c=>c.items):(db.menu[ui.cat]?db.menu[ui.cat].items:[]);
   POOL=pool.filter(x=>!q||x.en.toLowerCase().includes(q)).slice(0,100);
   if(q&&!POOL.length)return `<div class="pi"><span>${esc(ui.cq.trim())}</span><button class="sm" onclick="addNewPick()">${t('addNew')}</button></div>`;
-  return POOL.map((x,k)=>`<div class="pi"><span class="it">${esc(itm(x))}</span><span class="muted">${esc(catOf(x.en))}</span><button class="sm" onclick="addPool(${k})">+</button></div>`).join('');
+  return POOL.map((x,k)=>`<div class="pi"><span class="it">${esc(itm(x))}</span><span class="muted">${esc(catDisp(catOf(x.en)))}</span><button class="sm" onclick="addPool(${k})">+</button></div>`).join('');
 }
 function addPool(k){
   const x=POOL[k];if(!x)return;
@@ -327,7 +327,7 @@ function copyMenu(){
 /* ---------- Menu master ---------- */
 function vMaster(){
   const c=db.menu[ui.cat]||db.menu[0];
-  return `<div class="bar"><select style="width:auto" onchange="ui.cat=+this.value;render()">${db.menu.map((x,k)=>`<option value="${k}" ${k===ui.cat?'selected':''}>${esc(x.en)}</option>`).join('')}</select><button class="ghost sm" onclick="newCat()">${t('newCat')}</button></div>
+  return `<div class="bar"><select style="width:auto" onchange="ui.cat=+this.value;render()">${db.menu.map((x,k)=>`<option value="${k}" ${k===ui.cat?'selected':''}>${esc(x.en)}</option>`).join('')}</select><button class="ghost sm" onclick="newCat()">${t('newCat')}</button><button class="ghost sm" onclick="editCat(ui.cat)">✎ Category</button></div>
   <div class="bar"><input id="ni" placeholder="${t('newItem')}"><button onclick="newItem()">${t('addNew')}</button></div>
   <div class="card">${c.items.map((x,k)=>`<div class="mi"><span><b>${esc(x.en)}</b> <span class="muted">${esc(x.hi||autoHi(x.en))}</span></span><span class="acts"><button class="ghost sm" onclick="editItem(${k})">${t('edit')}</button><button class="ghost sm" onclick="delItem(${k})">${t('del')}</button></span></div>`).join('')||'<p class="muted">—</p>'}</div>`;
 }
@@ -347,9 +347,12 @@ function editItem(k){
 }
 function delItem(k){if(confirm('Delete this item from menu list?')){db.menu[ui.cat].items.splice(k,1);save();render();}}
 function newCat(){
-  const en=prompt('Category name');if(!en||!en.trim())return;
-  db.menu.push({id:uid(),en:en.trim().toUpperCase(),hi:'',items:[]});
-  ui.cat=db.menu.length-1;save();render();
+  askBoth('Naya category / New category','','',(en,hi)=>{
+    const up=en.toUpperCase();
+    if(db.menu.some(x=>x.en===up)){alert('"'+up+'" category pehle se hai');return;}
+    db.menu.push({id:uid(),en:up,hi,items:[]});
+    ui.cat=db.menu.length-1;save();render();
+  });
 }
 
 /* ---------- Data / backup ---------- */
@@ -397,7 +400,7 @@ function printM(){
   window.print();
 }
 function printRows(items){
-  return groupItems(items).map(g=>g.rows.map((r,ri)=>`<tr>${ri===0?`<td class="cat" rowspan="${g.rows.length}">${esc(g.c||'—')}</td>`:''}<td class="it">${esc(itm(r.x))}</td></tr>`).join('')).join('');
+  return groupItems(items).map(g=>g.rows.map((r,ri)=>`<tr>${ri===0?`<td class="cat" rowspan="${g.rows.length}">${esc(catDisp(g.c)||'—')}</td>`:''}<td class="it">${esc(itm(r.x))}</td></tr>`).join('')).join('');
 }
 function menuFileName(){
   const g=gcur();if(!g)return 'MENU';
@@ -426,7 +429,7 @@ function vPrint(){
 
 let MQ='';
 function mRow(x,ci,k){
-  return `<div class="mi"><span><b>${esc(x.en)}</b>${IL==='hi'?` <span class="muted">${esc(itm(x))}</span>`:''}<br><span class="muted" style="font-size:12px">${esc(db.menu[ci].en)}</span></span><span class="acts"><select style="width:auto" onchange="moveCat(${ci},${k},this.value)">${db.menu.map((c,n)=>`<option value="${n}" ${n===ci?'selected':''}>${esc(c.en)}</option>`).join('')}</select><button class="ghost sm" onclick="editItem2(${ci},${k})">${t('edit')}</button><button class="ghost sm" onclick="delItem2(${ci},${k})">${t('del')}</button></span></div>`;
+  return `<div class="mi"><span><b>${esc(x.en)}</b>${IL==='hi'?` <span class="muted">${esc(itm(x))}</span>`:''}<br><span class="muted" style="font-size:12px">${esc(catDisp(db.menu[ci].en))}</span></span><span class="acts"><select style="width:auto" onchange="moveCat(${ci},${k},this.value)">${db.menu.map((c,n)=>`<option value="${n}" ${n===ci?'selected':''}>${esc(c.en)}</option>`).join('')}</select><button class="ghost sm" onclick="editItem2(${ci},${k})">${t('edit')}</button><button class="ghost sm" onclick="delItem2(${ci},${k})">${t('del')}</button></span></div>`;
 }
 function mList(){
   const q=MQ.trim().toLowerCase();
@@ -438,7 +441,7 @@ function mList(){
 function vMaster2(){
   const opts=db.menu.map((c,k)=>`<option value="${k}">${esc(c.en)}</option>`).join('');
   return `<div class="bar"><input placeholder="${t('searchItem')}" value="${esc(MQ)}" oninput="MQ=this.value;$('#mlist').innerHTML=mList()"></div>
-  <div class="card"><div class="bar"><select style="width:auto" onchange="ui.cat=+this.value;MQ='';render()">${db.menu.map((c,k)=>`<option value="${k}" ${k===ui.cat?'selected':''}>${esc(c.en)}</option>`).join('')}</select><button class="ghost sm" onclick="newCat()">${t('newCat')}</button></div>
+  <div class="card"><div class="bar"><select style="width:auto" onchange="ui.cat=+this.value;MQ='';render()">${db.menu.map((c,k)=>`<option value="${k}" ${k===ui.cat?'selected':''}>${esc(c.en)}</option>`).join('')}</select><button class="ghost sm" onclick="newCat()">${t('newCat')}</button><button class="ghost sm" onclick="editCat(ui.cat)">✎ Category</button></div>
   <div class="bar"><input id="ni" placeholder="${t('newItem')}"><button onclick="newItem()">${t('addNew')}</button></div></div>
   <div class="card"><b>Merge categories</b><div class="row" style="margin-top:8px"><select id="mf" style="width:auto">${opts}</select><span>→</span><select id="mt" style="width:auto">${opts}</select><button class="sm" onclick="mergeCat()">Merge</button></div></div>
   <div class="card" id="mlist">${mList()}</div>`;
@@ -760,20 +763,20 @@ function driveCard(){
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* ---------- Hindi + English dialog, uppercase data, single-item rename ---------- */
 function askBoth(title,en,hi,cb){
+  const noHi=/heading/i.test(title);
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
   ov.innerHTML=`<div style="background:#fff;border-radius:12px;padding:16px;width:100%;max-width:380px">
     <b>${esc(title)}</b>
     <label style="margin-top:10px">English<input id="dlgE" value="${esc(en)}" style="text-transform:uppercase"></label>
-    <label style="margin-top:8px">हिंदी (Hindi)<input id="dlgH" value="${esc(hi||'')}" placeholder="हिंदी नाम"></label>
+    ${noHi?'':`<label style="margin-top:8px">हिंदी (Hindi)<input id="dlgH" value="${esc(hi||'')}" placeholder="हिंदी नाम"></label>`}
     <div class="acts" style="justify-content:flex-end"><button class="ghost" id="dlgC">Cancel</button><button id="dlgS">Save</button></div></div>`;
   document.body.appendChild(ov);
   const E=ov.querySelector('#dlgE'),H=ov.querySelector('#dlgH');
   E.focus();
-  E.oninput=()=>{if(!H.dataset.touched){H.value=autoHi(E.value)||H.value;}};
-  H.oninput=()=>{H.dataset.touched='1';};
+  if(H){E.oninput=()=>{if(!H.dataset.touched)H.value=autoHi(E.value)||H.value;};H.oninput=()=>{H.dataset.touched='1';};}
   const close=()=>ov.remove();
-  const save=()=>{const e=E.value.trim();if(!e){E.focus();return;}const h=H.value.trim();close();cb(e,h);};
+  const save=()=>{const e=E.value.trim();if(!e){E.focus();return;}const h=H?H.value.trim():'';close();cb(e,h);};
   ov.querySelector('#dlgC').onclick=close;
   ov.querySelector('#dlgS').onclick=save;
   ov.addEventListener('keydown',ev=>{if(ev.key==='Enter')save();if(ev.key==='Escape')close();});
@@ -792,10 +795,22 @@ function normUp(d){
     (g.days||[]).forEach(dd=>(dd.sessions||[]).forEach(s=>{if(s.h)s.h.en=U(s.h.en);s.decor=U(s.decor);s.remark=U(s.remark);(s.items||[]).forEach(x=>x.en=U(x.en));}));});
   (d.headings||[]).forEach(h=>h.en=U(h.en));
   (d.menu||[]).forEach(c=>{c.en=U(c.en);(c.items||[]).forEach(x=>x.en=U(x.en));});
+  (d.menu||[]).forEach(c=>{if(!c.hi&&CAT_HI[c.en])c.hi=CAT_HI[c.en];});
   (d.templates||[]).forEach(t=>{t.en=U(t.en);(t.items||[]).forEach(x=>x.en=U(x.en));});
   return d;
 }
-function hdn(o){return IL==='hi'?(o.hi||autoHi(o.en)||o.en):o.en;}
+function hdn(o){return o.en;}
+/* ---------- Category Hindi names ---------- */
+const CAT_HI={'RICE':'चावल','INDIAN BREADS':'भारतीय रोटी','PUNJABI DHABA':'पंजाबी ढाबा','SWEETS':'मिठाई','ICE CREAM':'आइसक्रीम','VEGETABLE & KOFTA':'सब्ज़ी व कोफ्ता','DAL & KADI':'दाल व कढ़ी','CURD':'रायता / दही','PANEER':'पनीर','MEXICAN':'मैक्सिकन','CONTINENTAL':'कॉन्टिनेंटल','ROLLS & SANDWICHES':'रोल व सैंडविच','CHINESE':'चाइनीज़','CHAT':'चाट','SPECIAL CHAT':'स्पेशल चाट','ITALIAN':'इटालियन','WELCOME DRINKS & MOCKTAILS':'स्वागत पेय','SOUP':'सूप','SALADS':'सलाद','SNACKS (STARTERS)':'स्नैक्स','SOUTH INDIAN STALL':'साउथ इंडियन'};
+function catDisp(en){const c=db.menu.find(x=>x.en===en);if(!c)return en||'';return IL==='hi'?(c.hi||CAT_HI[c.en]||autoHi(c.en)||c.en):c.en;}
+function editCat(ci){
+  const c=db.menu[ci];if(!c)return;
+  askBoth('Category edit / कैटेगरी बदलें',c.en,c.hi||CAT_HI[c.en]||'',(en,hi)=>{
+    const up=en.toUpperCase();
+    if(db.menu.some((x,n)=>n!==ci&&x.en===up)){alert('"'+up+'" category pehle se hai');return;}
+    c.en=up;c.hi=hi;save();render();
+  });
+}
 function load(){return normUp(load0());}
 
 /* ---------- Stay connected to Drive, silent renew, logout ---------- */
