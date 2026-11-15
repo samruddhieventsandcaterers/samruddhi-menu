@@ -363,6 +363,7 @@ function vData(){
     <p class="muted" style="font-size:13px">Ek baar backup file chunein. Uske baad har change apne aap usi file me save hoga. Chrome/Edge (computer) par chalega.</p>
     <div class="acts"><button onclick="setAutoFile()">${AF?'Backup file badlen':'Backup file chunein'}</button>${AF?'<button class="ghost" onclick="reconnectAuto()">Permission dein</button>':''}</div>
     <p id="autoStatus" class="muted" style="font-size:13px">${AF?'File: '+esc(AF.name):'Abhi file set nahi hai'}</p></div>
+  ${pdfCard()}
   ${driveCard()}
   <div class="card"><b>② Manual backup / restore (mobile ke liye)</b>
     <div class="acts"><button onclick="exportFull()">📤 Backup download</button><button class="ghost" onclick="document.getElementById('restoreFile').click()">📥 Backup restore</button><input id="restoreFile" type="file" accept=".json,application/json" hidden onchange="restoreFull(this.files[0])"></div>
@@ -489,7 +490,7 @@ if(d.eventDate&&typeof setDateInputValue==='function')setDateInputValue(document
 if(d.ftype){var sel=document.getElementById('funcType'),c=document.getElementById('funcTypeCustom');var ok=[].some.call(sel.options,function(o){return o.value===d.ftype;});
  if(ok){sel.value=d.ftype;c.style.display='none';}else{sel.value='__custom__';c.style.display='block';c.value=d.ftype;}}
 if(typeof updatePrintFields==='function')updatePrintFields();
-}catch(err){}});window.addEventListener('beforeprint',function(){try{parent.document.title=buildPrintFileName();}catch(e){}});window.addEventListener('afterprint',function(){try{parent.document.title='Samruddhi Menu';}catch(e){}});<\/script>`;
+}catch(err){}});if(typeof saveQuote==='function'){var _sq=saveQuote;saveQuote=function(){var r=_sq.apply(this,arguments);try{parent.scheduleDrive();}catch(e){}return r;};}window.addEventListener('beforeprint',function(){try{parent.document.title=buildPrintFileName();}catch(e){}});window.addEventListener('afterprint',function(){try{parent.document.title='Samruddhi Menu';}catch(e){}});<\/script>`;
 let QHTML=null;
 function qHTML(){
   if(!QHTML){
@@ -698,11 +699,12 @@ async function gFetch(url,opts={}){
   if(!gTok||Date.now()>gTokExp)throw new Error('Drive connect karein');
   const r=await fetch(url,{...opts,headers:{...(opts.headers||{}),Authorization:'Bearer '+gTok}});
   if(r.status===401){gTok=null;throw new Error('Drive session khatam, dubara connect karein');}
-  if(!r.ok)throw new Error('Drive error '+r.status);
+  if(!r.ok){let m='';try{m=(await r.json()).error.message;}catch(e){}throw new Error('Drive '+r.status+(m?': '+m:''));}
   return r;
 }
 async function gFindFile(){
-  const q="name='"+GDRIVE_NAME+"' and trashed=false";
+  await gEnsureFolder();
+  const q="name='"+GDRIVE_NAME+"' and '"+gFolderId+"' in parents and trashed=false";
   const r=await gFetch('https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id,name)&q='+encodeURIComponent(q));
   const j=await r.json();
   return j.files&&j.files[0]?j.files[0].id:null;
@@ -711,18 +713,19 @@ async function pushDrive(){
   if(!gTok||!gReady())return;
   try{
     const body=JSON.stringify(fullBackupObj(),null,1);
+    await gEnsureFolder();
     if(!gFileId)gFileId=await gFindFile();
     if(gFileId){
       await gFetch('https://www.googleapis.com/upload/drive/v3/files/'+gFileId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body});
     }else{
       const b='samruddhi'+Date.now();
-      const meta=JSON.stringify({name:GDRIVE_NAME,mimeType:'application/json'});
+      const meta=JSON.stringify({name:GDRIVE_NAME,mimeType:'application/json',parents:[gFolderId]});
       const multi='--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+b+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+b+'--';
       const r=await gFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body:multi});
       gFileId=(await r.json()).id;
       localStorage.setItem('samruddhi_drive_file',gFileId);
     }
-    gStatus('☁️ Drive par save ho gaya: '+new Date().toLocaleTimeString());
+    gStatus('☁️ Drive folder "'+GDRIVE_FOLDER+'" me save ho gaya: '+new Date().toLocaleTimeString());
   }catch(e){gStatus('⚠️ Drive sync: '+e.message);}
 }
 function scheduleDrive(){
@@ -755,7 +758,7 @@ function driveCard(){
   if(gTok)btns.push('<button class="ghost" onclick="restoreDrive()">Drive se data laayein</button>');
   if(gTok)btns.push('<button class="ghost" onclick="gLogout()">Logout (Drive se bahar)</button>');
   return `<div class="card"><b>③ Google Drive (multi-device sync)</b>
-    <p class="muted" style="font-size:13px">${gTok?'✅ Drive connected. Ek baar connect karne ke baad ye apne aap renew hota hai.':'Ek hi file (samruddhi_backup.json) Drive me update hoti rahegi. Naye device par same Gmail se connect karke "Drive se data laayein" dabayein.'}</p>
+    <p class="muted" style="font-size:13px">${gTok?'✅ Drive connected. Ek baar connect karne ke baad ye apne aap renew hota hai.':'Drive me "Samruddhi Backup" folder ban kar usme ek file (samruddhi_backup.json) apne aap update hoti rahegi. Naye device par same Gmail se connect karke "Drive se data laayein" dabayein.'}</p>
     <div class="acts">${btns.join('')}</div>
     <p id="gStatus" class="muted" style="font-size:13px">${esc(gMsg||(gTok?'Connected':'Abhi connect nahi hai'))}</p></div>`;
 }
@@ -831,6 +834,181 @@ function gLogout(){
 function gNeedsRenew(){return localStorage.getItem('samruddhi_gok')&&(!gTok||Date.now()>gTokExp-300000);}
 setTimeout(()=>{if(gNeedsRenew())gSilent();},3000);
 setInterval(()=>{if(gNeedsRenew())gSilent();},60000);
+
+/* ---------- Drive folder "Samruddhi Backup" ---------- */
+const GDRIVE_FOLDER='Samruddhi Backup';
+let gFolderId=localStorage.getItem('samruddhi_drive_folder')||null;
+async function gEnsureFolder(){
+  if(gFolderId)return gFolderId;
+  const q="name='"+GDRIVE_FOLDER+"' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+  const j=await (await gFetch('https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id,name)&q='+encodeURIComponent(q))).json();
+  if(j.files&&j.files[0]){gFolderId=j.files[0].id;}
+  else{
+    const c=await (await gFetch('https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:GDRIVE_FOLDER,mimeType:'application/vnd.google-apps.folder'})})).json();
+    gFolderId=c.id;
+  }
+  localStorage.setItem('samruddhi_drive_folder',gFolderId);
+  if(gFileId){try{await gFetch('https://www.googleapis.com/drive/v3/files/'+gFileId+'?addParents='+gFolderId+'&removeParents=root&fields=id',{method:'PATCH'});}catch(e){}}
+  return gFolderId;
+}
+setInterval(()=>{if(gTok&&gReady())pushDrive();},120000);
+
+/* ---------- Restore data from a saved quotation or menu PDF ---------- */
+let pdfjsReady=null;
+function loadPdfJs(){
+  if(pdfjsReady)return pdfjsReady;
+  pdfjsReady=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(window.pdfjsLib);};
+    s.onerror=()=>{pdfjsReady=null;rej(new Error('PDF reader load nahi hua. Internet check karke dobara try kijiye.'));};
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+async function pdfLines(file){
+  const lib=await loadPdfJs();
+  const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  const out=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const tc=await (await doc.getPage(p)).getTextContent();
+    const rows=[];
+    tc.items.forEach(it=>{
+      if(!it.str||!it.str.trim())return;
+      const y=it.transform[5];
+      let r=rows.find(r=>Math.abs(r.y-y)<3);
+      if(!r){r={y,items:[]};rows.push(r);}
+      r.items.push({x:it.transform[4],s:it.str});
+    });
+    rows.sort((a,b)=>b.y-a.y).forEach(r=>{
+      const line=r.items.sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim();
+      if(line)out.push(line);
+    });
+  }
+  return out;
+}
+function parseQuote(lines){
+  const txt=lines.join('\n');
+  const g=re=>{const m=txt.match(re);return m?m[1].trim():'';};
+  const q={
+    quoteNo:g(/Quote\s*No\s*:?\s*(SQ-\d+)/i),
+    guestName:g(/GUEST'?S?\s*NAME\s+(.+?)(?=\s+Mob\.?|$)/im),
+    guestMobile:g(/Mob\.?\s*(\d{10})/i),
+    guestVenue:g(/^VENUE\s+(.+?)(?=\s+Date\s*:|$)/im),
+    funcType:g(/^FUNCTION\s+(.+?)(?=\s+Event\s*Date|$)/im),
+    eventDate:g(/Event\s*Date\s*:\s*(\d{1,2}\/[A-Za-z]{3}\/\d{4})/i),
+    billingRows:[]
+  };
+  lines.forEach(L=>{
+    const m=L.match(/^(?:(\d{1,2}\/[A-Za-z]{3}\/\d{4})\s+)?([A-Za-z][^\d]*?)\s+(\d+)\s+(\d+(?:\.\d+)?)\s+(?:₹\s*)?[\d,]+(?:\.\d+)?$/);
+    if(m&&!/TOTAL|ADVANCE|NET|AMOUNT/i.test(m[2]))q.billingRows.push({date:m[1]||'',particular:m[2].trim(),qty:m[3],rate:m[4]});
+  });
+  return q;
+}
+function parseMenu(lines){
+  const txt=lines.join('\n');
+  const g=re=>{const m=txt.match(re);return m?m[1].trim():'';};
+  const out={
+    name:g(/GUEST\s*NAME\s+(.+?)(?=\s+MOBILE|$)/im),
+    mobile:g(/MOBILE\s*NUMBER\s+(\d{10})/i),
+    ftype:g(/FUNCTION\s*TYPE\s+(.+?)(?=\s+FUNCTION\s*DATE|$)/im),
+    fdate:g(/FUNCTION\s*DATE\s+(\d{1,2}\/[A-Za-z]{3}\/\d{4})/i),
+    venue:g(/VENUE\s+(.+?)$/im),
+    days:[]
+  };
+  const cats=db.menu.map(c=>c.en.toUpperCase());
+  const heads=db.headings.map(h=>h.en.toUpperCase());
+  const squash=s=>s.replace(/\s+/g,'');
+  const isHead=i=>{
+    const L=lines[i].trim(), nx=squash(lines[i+1]||'');
+    if(!L||L.length>40||/\d/.test(L)||L!==L.toUpperCase())return false;
+    if(/^(DAY|MENU|TIME|MEMBER|RATE|DECORATION|REMARK|GUEST|FUNCTION|VENUE|MOBILE|SAMRUDDHI|EVENT|ADDRESS)/.test(L))return false;
+    return nx==='MENU'||/^(TIME:|MEMBER:|RATE:|DECORATION|REMARK:)/.test(nx)||heads.includes(L);
+  };
+  let day=null, sess=null, items=false;
+  const grab=(L,k)=>{const m=L.match(new RegExp(k+':\\s*(.*?)(?=\\s+(TIME|MEMBER|RATE|DECORATION TYPE|REMARK):|$)','i'));return m?m[1].trim():'';};
+  lines.forEach((raw,i)=>{
+    const L=raw.trim();if(!L)return;
+    const dm=L.match(/^DAY\s+(\d+)(?:\s+[—\-–]\s+(\d{1,2}\/[A-Za-z]{3}\/\d{4}))?/i);
+    if(dm){day={date:dm[2]||'',sessions:[]};out.days.push(day);sess=null;items=false;return;}
+    if(isHead(i)){
+      if(!day){day={date:'',sessions:[]};out.days.push(day);}
+      sess={heading:L,time:'',member:'',decor:'',remark:'',items:[]};
+      day.sessions.push(sess);items=false;return;
+    }
+    if(!sess)return;
+    if(squash(L)==='MENU'){items=true;return;}
+    if(/^(TIME|MEMBER|RATE|DECORATION|REMARK):/i.test(L)){
+      sess.time=grab(L,'TIME')||sess.time;
+      sess.member=grab(L,'MEMBER')||sess.member;
+      sess.decor=grab(L,'DECORATION TYPE')||sess.decor;
+      sess.remark=grab(L,'REMARK')||sess.remark;
+      return;
+    }
+    if(items){
+      let it=L.replace(/^[^A-Za-z0-9(]+/,'').trim();
+      const c=cats.find(c=>it===c||it.startsWith(c+' '));
+      if(c)it=it.slice(c.length).trim();
+      if(it&&!/^(TOTAL|NOTE|SIGN)/i.test(it))sess.items.push(it);
+    }
+  });
+  return out;
+}
+function restoreQuote(q){
+  let arr=[];try{arr=JSON.parse(localStorage.getItem('samruddhi_quotes')||'[]');}catch(e){}
+  const rec={id:Date.now(),quoteNo:q.quoteNo,quoteDate:'',eventDate:q.eventDate,guestName:q.guestName,guestMobile:q.guestMobile,guestVenue:q.guestVenue,funcType:q.funcType,billingRows:q.billingRows,lang:'en'};
+  const i=arr.findIndex(x=>x.quoteNo===q.quoteNo);
+  if(i>=0)arr[i]={...arr[i],...rec};else arr.push(rec);
+  localStorage.setItem('samruddhi_quotes',JSON.stringify(arr));
+  const n=q.guestName.toUpperCase();
+  let g=db.guests.find(x=>x.qno===q.quoteNo)||db.guests.find(x=>(x.name||'').toUpperCase()===n);
+  if(!g){g={id:uid(),name:n,mobile:q.guestMobile,address:'',ftype:(q.funcType||'').toUpperCase(),fdate:isoDate(q.eventDate),venue:(q.guestVenue||'').toUpperCase(),days:[]};db.guests.push(g);}
+  g.qno=q.quoteNo;
+  save();
+  location.reload();
+}
+function restoreMenu(p){
+  let g=db.guests.find(x=>(x.name||'').toUpperCase()===p.name.toUpperCase());
+  if(!g){g={id:uid(),qno:'',name:'',mobile:'',address:'',ftype:'',fdate:'',venue:'',days:[]};db.guests.push(g);}
+  g.name=p.name.toUpperCase();
+  if(p.mobile)g.mobile=p.mobile;
+  if(p.ftype)g.ftype=p.ftype.toUpperCase();
+  if(p.fdate)g.fdate=isoDate(p.fdate);
+  if(p.venue)g.venue=p.venue.toUpperCase();
+  g.days=p.days.map(d=>({date:isoDate(d.date),sessions:d.sessions.map(s=>{
+    let hd=db.headings.find(h=>h.en.toUpperCase()===s.heading.toUpperCase());
+    if(!hd){hd={id:uid(),en:s.heading.toUpperCase(),hi:''};db.headings.push(hd);}
+    return {h:{en:hd.en,hi:''},time:s.time,member:s.member,rate:'',decor:s.decor,remark:s.remark,items:s.items.map(x=>({en:x.toUpperCase(),hi:''}))};
+  })}));
+  save();
+  go('menu',{gid:g.id});
+}
+async function pdfRestore(file){
+  if(!file)return;
+  const st=m=>{const e=document.getElementById('pdfStatus');if(e)e.textContent=m;};
+  try{
+    st('PDF padh rahe hain...');
+    const lines=await pdfLines(file);
+    const txt=lines.join('\n');
+    if(/Quote\s*No/i.test(txt)){
+      const q=parseQuote(lines);
+      if(!q.quoteNo)throw new Error('Quotation number nahi mila');
+      if(!confirm('Quotation '+q.quoteNo+'\nGuest: '+q.guestName+'\nRows: '+q.billingRows.length+'\n\nIs quotation ko wapas bharein?'))return;
+      restoreQuote(q);
+    }else if(/GUEST\s*NAME/i.test(txt)&&/MENU/i.test(txt)){
+      const p=parseMenu(lines);
+      if(!p.name)throw new Error('Guest ka naam nahi mila');
+      if(!confirm('Menu: '+p.name+'\nDays: '+p.days.length+'\n\nIs menu ko wapas bharein?'))return;
+      restoreMenu(p);
+    }else throw new Error('Ye Samruddhi ki quotation ya menu PDF nahi lagti');
+  }catch(e){st('⚠️ '+e.message);alert('PDF restore failed: '+e.message);}
+}
+function pdfCard(){
+  return `<div class="card"><b>④ Purani PDF se data wapas laayein</b>
+    <p class="muted" style="font-size:13px">Quotation ya menu ki saved PDF chuniye. App usme se guest, rows aur menu padhkar data wapas bhar degi.</p>
+    <div class="acts"><button onclick="document.getElementById('pdfIn').click()">PDF upload karein</button><input id="pdfIn" type="file" accept="application/pdf" hidden onchange="pdfRestore(this.files[0])"></div>
+    <p id="pdfStatus" class="muted" style="font-size:13px"></p></div>`;
+}
 
 loadAutoFile().then(()=>render());
 db=load();
