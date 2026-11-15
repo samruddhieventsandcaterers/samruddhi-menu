@@ -49,7 +49,7 @@ table.itbl td.ac{width:120px;text-align:right;white-space:nowrap}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0}
 .chip{background:#fff;color:var(--maroon);border:1px solid var(--line);white-space:nowrap;padding:5px 10px;border-radius:14px}
 .chip.on{background:var(--purple);color:#fff;border-color:var(--purple)}
-.picker{position:sticky;bottom:0;box-shadow:0 -4px 14px rgba(60,20,10,.12);max-height:50vh;display:flex;flex-direction:column;overflow:hidden}
+.picker{position:sticky;bottom:0;box-shadow:0 -4px 14px rgba(60,20,10,.12);max-height:70vh;display:flex;flex-direction:column;overflow:hidden}
 #pl{overflow:auto;margin-top:6px;flex:1}
 .pi,.mi{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
 .lang{display:flex;gap:4px}
@@ -74,6 +74,9 @@ body.en .it{text-transform:uppercase}
 .sheet table.pt td.cat{width:30%;font-weight:bold;color:#6b0f1a;background:transparent;border:none;border-bottom:1px dotted #bbb}
 .sheet.en table.pt td.it{text-transform:uppercase}
 .sess2{break-inside:avoid}
+body,body *:not(input):not(textarea):not(select){text-transform:uppercase}
+.form4 input{font-size:16px}
+.sess b{font-size:18px}
 </style>
 </head>
 <body class="en">
@@ -129,7 +132,7 @@ function autoHi(en){
 }
 
 Object.assign(DW,{steam:'स्टीम',fry:'फ्राई',fried:'फ्राइड',boiled:'उबला',hot:'हॉट',spicy:'स्पाइसी',plain:'प्लेन',special:'स्पेशल',chinese:'चाइनीज़',indian:'इंडियन',punjabi:'पंजाबी',gujarati:'गुजराती',rajasthani:'राजस्थानी',mixed:'मिक्स्ड',curry:'करी',gravy:'ग्रेवी',pudina:'पुदीना',pudhina:'पुदीना',lemon:'नींबू',coriander:'धनिया',jeera:'जीरा',methi:'मेथी',shahi:'शाही',kadai:'कड़ाई',kadhai:'कढ़ाई',chatpata:'चटपटा',cake:'केक',pastry:'पेस्ट्री',lemonade:'लेमोनेड',shake:'शेक',thandai:'ठंडाई',sooji:'सूजी',upma:'उपमा',uttapam:'उत्तपम',vegetable:'वेजिटेबल',ghee:'घी',sauce:'सॉस',bhatura:'भटूरा',nuggets:'नगेट्स',balls:'बॉल्स',finger:'फिंगर',salt:'नमक',pepper:'पेपर',noodle:'नूडल्स',triple:'ट्रिपल',bowl:'बाउल',chilly:'चिल्ली',tandoor:'तंदूर',punch:'पंच',soda:'सोडा',paan:'पान',kulfi:'कुल्फ़ी',rasgulla:'रसगुल्ला',rasagulla:'रसगुल्ला',sandesh:'संदेश',basundi:'बासुंदी',rabri:'रबड़ी',kesari:'केसरी',khoya:'खोया',gatta:'गट्टा',churma:'चूरमा',bati:'बाटी',baafla:'बाफला',kachumber:'कचुम्बर',chaas:'छाछ',khaman:'खमन',pettis:'पैटिस',kachori:'कचौरी',papdi:'पापड़ी',ragda:'रगड़ा',sabudana:'साबूदाना',chilli2:'चिल्ली'});
-const LBL={time:'Time',quote:'Quotation',guests:'Guest Book',menu:'Menu Maker',master:'Menu Master',data:'Data',newGuest:'+ New Guest',search:'Search name, mobile, venue',name:'Guest Name',address:'Address',mobile:'Mobile Number',ftype:'Function Type',fdate:'Function Date',venue:'Venue',save:'Save',cancel:'Cancel',edit:'Edit',del:'Delete',menuBtn:'Menu',days:'Function days',dayN:'Day',member:'Member',rate:'Rate',decor:'Decoration Type',remark:'Remark',addItems:'Add items',removeS:'Remove heading',print:'Print / Save PDF',export:'Export backup',import:'Import backup',noGuest:'No guests yet. Tap + New Guest.',pickGuest:'Pick a guest from Guest Book first.',back:'← Back',searchItem:'Search item...',addNew:'Add to menu',newItem:'New item name',newCat:'+ Category',useTpl:'Use template',saveTpl:'Save as template',addHead:'Add heading',copyFrom:'Copy menu from this guest',itemCol:'Category',itemName:'Item'};
+const LBL={tpl:'Templates',time:'Time',quote:'Quotation',guests:'Guest Book',menu:'Menu Maker',master:'Menu Master',data:'Data',newGuest:'+ New Guest',search:'Search name, mobile, venue',name:'Guest Name',address:'Address',mobile:'Mobile Number',ftype:'Function Type',fdate:'Function Date',venue:'Venue',save:'Save',cancel:'Cancel',edit:'Edit',del:'Delete',menuBtn:'Menu',days:'Function days',dayN:'Day',member:'Member',rate:'Rate',decor:'Decoration Type',remark:'Remark',addItems:'Add items',removeS:'Remove heading',print:'Print / Save PDF',export:'Export backup',import:'Import backup',noGuest:'No guests yet. Tap + New Guest.',pickGuest:'Pick a guest from Guest Book first.',back:'← Back',searchItem:'Search item...',addNew:'Add to menu',newItem:'New item name',newCat:'+ Category',useTpl:'Use template',saveTpl:'Save as template',addHead:'Add heading',copyFrom:'Copy menu from this guest',itemCol:'Category',itemName:'Item'};
 const t=k=>LBL[k]||k;
 
 let db, IL='en', POOL=[], ui={tab:'guests',q:'',gid:null,fid:null,cat:0,cq:'',act:null};
@@ -159,9 +162,9 @@ function setIL(l){IL=l;render();}
 function render(){
   document.body.className=IL;
   const cur=ui.tab==='form'?'guests':ui.tab;
-  $('#nav').innerHTML=['guests','menu','quote','master','data'].map(k=>`<button class="${cur===k?'on':''}" onclick="go('${k}')">${t(k)}</button>`).join('')+
+  $('#nav').innerHTML=['guests','menu','quote','tpl','master','data'].map(k=>`<button class="${cur===k?'on':''}" onclick="go('${k}')">${t(k)}</button>`).join('')+
     `<span class="lang" title="Item language"><button class="${IL==='en'?'on':''}" onclick="setIL('en')">EN</button><button class="${IL==='hi'?'on':''}" onclick="setIL('hi')">हिं</button></span>`;
-  const v={guests:vGuests,form:vForm,menu:vMenu2,quote:vQuote,master:vMaster2,data:vData}[ui.tab];
+  const v={guests:vGuests,form:vForm,menu:vMenu2,quote:vQuote,tpl:vTpl,master:vMaster2,data:vData}[ui.tab];
   if(ui.tab==='quote'){$('#app').innerHTML='';$('#qwrap').style.display='block';if(!$('#qapp')){$('#qwrap').innerHTML=vQuote();$('#qapp').srcdoc=qHTML();}}
   else{$('#qwrap').style.display='none';$('#app').innerHTML=v();}
   $('#print').innerHTML=vPrint();
@@ -208,14 +211,13 @@ function vMenu(){
   g.days.forEach((d,i)=>{
     h+=`<div class="day"><div class="row"><b>${t('dayN')} ${i+1}</b><input type="date" style="width:auto" value="${d.date}" onchange="gcur().days[${i}].date=this.value;save()"></div>`;
     d.sessions.forEach((s,j)=>{
-      h+=`<div class="sess"><div class="row"><b>${esc(hdn(s.h))}</b><span class="acts"><button class="sm" onclick="startAdd(${i},${j})">${t('addItems')}</button><button class="ghost sm" onclick="saveTpl(${i},${j})">${t('saveTpl')}</button><button class="ghost sm" onclick="delSess(${i},${j})">${t('removeS')}</button></span></div>
+      h+=`<div class="sess"><div class="row"><b>${esc(hdn(s.h))}</b><span class="acts"><button onclick="startAdd(${i},${j})" style="font-size:16px;padding:10px 16px;font-weight:bold">${t('addItems')}</button><button class="ghost sm" onclick="saveTpl(${i},${j})">${t('saveTpl')}</button><button class="ghost sm" onclick="delSess(${i},${j})">${t('removeS')}</button></span></div>
       <div class="form4">${inp(s,'time',i,j)}${inp(s,'member',i,j)}${inp(s,'rate',i,j)}${inp(s,'decor',i,j)}${inp(s,'remark',i,j)}</div>
       ${itemTable(s,i,j)}</div>`;
     });
     h+=`<div class="addh"><div class="row"><select id="nh${i}">${db.headings.map(x=>`<option value="${x.id}">${esc(hdn(x))}</option>`).join('')}</select>
       <button class="sm" onclick="addSess(${i})">${t('addHead')}</button>
-      <button class="ghost sm" onclick="hEdit(${i},'add')">+ H</button><button class="ghost sm" onclick="hEdit(${i},'edit')">✎</button><button class="ghost sm" onclick="hEdit(${i},'del')">✕</button></div>
-      <div class="row" style="margin-top:8px"><select id="tp${i}">${db.templates.map(x=>`<option value="${x.id}">${esc(x.en)}</option>`).join('')}</select><button class="ghost sm" onclick="addTpl(${i})">${t('useTpl')}</button></div></div></div>`;
+      <button class="ghost sm" onclick="hEdit(${i},'add')">+ H</button><button class="ghost sm" onclick="hEdit(${i},'edit')">✎</button><button class="ghost sm" onclick="hEdit(${i},'del')">✕</button></div></div></div>`;
   });
   return h+picker(g);
 }
@@ -239,8 +241,9 @@ function setDays(n){
 function addSess(i){
   const h=db.headings.find(x=>x.id===$('#nh'+i).value);
   if(!h)return;
+  ensureTpl(h.en);
   const d=gcur().days[i];
-  d.sessions.push({h:{en:h.en,hi:''},time:defTime(h.en),member:'',rate:'',decor:'',remark:'',items:[]});
+  d.sessions.push({h:{en:h.en,hi:''},time:defTime(h.en),member:'',rate:'',decor:'',remark:'',items:tplItems(h.en)});
   save();startAdd(i,d.sessions.length-1);
 }
 function delSess(i,j){if(confirm('Remove this heading and its items?')){gcur().days[i].sessions.splice(j,1);save();render();}}
@@ -255,7 +258,7 @@ function hEdit(i,mode){
     askBoth('Naya heading / New heading','','',(en,hi)=>{
       const up=en.toUpperCase();
       if(db.headings.some(x=>x.en.toUpperCase()===up)){alert('"'+up+'" heading pehle se hai');return;}
-      db.headings.push({id:uid(),en:up,hi});save();render();
+      db.headings.push({id:uid(),en:up,hi});ensureTpl(up);save();render();
     });
     return;
   }
@@ -266,12 +269,12 @@ function hEdit(i,mode){
     h.en=up;h.hi=hi;save();render();
   });
 }
-function startAdd(i,j){ui.act={i,j};ui.cq='';render();const p=$('#picker');if(p)p.scrollIntoView({behavior:'smooth',block:'end'});}
+function startAdd(i,j){ui.act={i,j};ui.cq='';ui.all=true;render();const p=$('#picker');if(p)p.scrollIntoView({behavior:'smooth',block:'end'});}
 function picker(g){
   const a=ui.act;
   if(!a||!g.days[a.i]||!g.days[a.i].sessions[a.j])return '';
   const s=g.days[a.i].sessions[a.j];
-  const cats=db.menu.map((c,k)=>`<button class="chip ${k===ui.cat?'on':''}" onclick="ui.cat=${k};ui.cq='';render()">${esc(catDisp(c.en))}</button>`).join('');
+  const cats=`<button class="chip ${ui.all?'on':''}" onclick="ui.all=true;ui.cq='';render()">ALL ITEMS</button>`+db.menu.map((c,k)=>`<button class="chip ${!ui.all&&k===ui.cat?'on':''}" onclick="ui.cat=${k};ui.all=false;ui.cq='';render()">${esc(catDisp(c.en))}</button>`).join('');
   return `<div class="picker" id="picker"><div class="row"><b>${t('addItems')}: ${esc(hdn(s.h))}</b><button class="ghost sm" onclick="ui.act=null;render()">✕</button></div>
     <div class="chips">${cats}</div>
     <input id="iq" placeholder="${t('searchItem')}" value="${esc(ui.cq)}" oninput="ui.cq=this.value;$('#pl').innerHTML=pList()">
@@ -279,7 +282,7 @@ function picker(g){
 }
 function pList(){
   const q=ui.cq.trim().toLowerCase();
-  const pool=q?db.menu.flatMap(c=>c.items):(db.menu[ui.cat]?db.menu[ui.cat].items:[]);
+  const pool=(q||ui.all)?db.menu.flatMap(c=>c.items).slice().sort((a,b)=>a.en.localeCompare(b.en)):(db.menu[ui.cat]?db.menu[ui.cat].items:[]);
   POOL=pool.filter(x=>!q||x.en.toLowerCase().includes(q)).slice(0,100);
   if(q&&!POOL.length)return `<div class="pi"><span>${esc(ui.cq.trim())}</span><button class="sm" onclick="addNewPick()">${t('addNew')}</button></div>`;
   return POOL.map((x,k)=>`<div class="pi"><span class="it">${esc(itm(x))}</span><span class="muted">${esc(catDisp(catOf(x.en)))}</span><button class="sm" onclick="addPool(${k})">+</button></div>`).join('');
@@ -289,6 +292,7 @@ function addPool(k){
   const a=ui.act;const items=gcur().days[a.i].sessions[a.j].items;
   if(items.some(y=>y.en.toUpperCase()===x.en.toUpperCase())){alert('"'+x.en+'" ye item is heading me pehle se add hai');return;}
   items.push({en:x.en,hi:x.hi||''});
+  learnTpl(gcur().days[a.i].sessions[a.j].h.en,x.en);
   ui.cq='';save();render();
 }
 function addNewPick(){
@@ -298,6 +302,7 @@ function addNewPick(){
   const a=ui.act;const items=gcur().days[a.i].sessions[a.j].items;
   if(items.some(y=>y.en.toUpperCase()===en)){alert('"'+en+'" ye item is heading me pehle se add hai');return;}
   items.push({en,hi:''});
+  learnTpl(gcur().days[a.i].sessions[a.j].h.en,en);
   ui.cq='';save();render();
 }
 function mvItem(i,j,k,d){const arr=gcur().days[i].sessions[j].items;const n=k+d;if(n<0||n>=arr.length)return;[arr[k],arr[n]]=[arr[n],arr[k]];save();render();}
@@ -490,7 +495,7 @@ if(d.eventDate&&typeof setDateInputValue==='function')setDateInputValue(document
 if(d.ftype){var sel=document.getElementById('funcType'),c=document.getElementById('funcTypeCustom');var ok=[].some.call(sel.options,function(o){return o.value===d.ftype;});
  if(ok){sel.value=d.ftype;c.style.display='none';}else{sel.value='__custom__';c.style.display='block';c.value=d.ftype;}}
 if(typeof updatePrintFields==='function')updatePrintFields();
-}catch(err){}});if(typeof saveQuote==='function'){var _sq=saveQuote;saveQuote=function(){var r=_sq.apply(this,arguments);try{parent.scheduleDrive();}catch(e){}return r;};}window.addEventListener('beforeprint',function(){try{parent.document.title=buildPrintFileName();}catch(e){}});window.addEventListener('afterprint',function(){try{parent.document.title='Samruddhi Menu';}catch(e){}});<\/script>`;
+}catch(err){}});var _cs=document.createElement('style');_cs.textContent='body,body *:not(input):not(textarea):not(select){text-transform:uppercase}';document.head.appendChild(_cs);if(typeof saveQuote==='function'){var _sq=saveQuote;saveQuote=function(){var r=_sq.apply(this,arguments);try{parent.scheduleDrive();}catch(e){}return r;};}window.addEventListener('beforeprint',function(){try{parent.document.title=buildPrintFileName();}catch(e){}});window.addEventListener('afterprint',function(){try{parent.document.title='Samruddhi Menu';}catch(e){}});<\/script>`;
 let QHTML=null;
 function qHTML(){
   if(!QHTML){
@@ -814,6 +819,43 @@ function editCat(ci){
     c.en=up;c.hi=hi;save();render();
   });
 }
+/* ---------- Templates: auto-saved per heading, editable in Menu Master ---------- */
+function tplItems(en){const t=db.templates.find(x=>x.en.toUpperCase()===String(en).toUpperCase());return t?t.items.map(x=>({...x})):[];}
+function ensureTpl(name){
+  const up=String(name).toUpperCase();
+  if(!db.templates.some(t=>t.en.toUpperCase()===up))db.templates.push({id:uid(),en:up,hi:'',items:[]});
+}
+function learnTpl(headName,itemName){
+  ensureTpl(headName);
+  const t=db.templates.find(x=>x.en.toUpperCase()===String(headName).toUpperCase());
+  const iu=String(itemName).toUpperCase();
+  if(t&&!t.items.some(x=>x.en.toUpperCase()===iu))t.items.push({en:iu,hi:''});
+}
+function vTpl(){return tplSection();}
+function tplSection(){
+  return `<h2>TEMPLATES</h2>
+  <p class="muted" style="font-size:13px">Har heading ke items yahan save hote hain. Naya heading menu me aate hi ye apne aap ban jata hai, aur us heading ke saved items menu me apne aap aa jate hain. Yahan naam, items badal ya hata sakte hain.</p>
+  <div class="card">${db.templates.map((tp,ti)=>`<div class="mi" style="flex-direction:column;align-items:stretch">
+    <div class="row"><b style="font-size:17px">${esc(tp.en)}</b><span class="acts"><button class="ghost sm" onclick="tplRename(${ti})">${t('edit')}</button><button class="ghost sm" onclick="delTpl('${tp.id}')">${t('del')}</button></span></div>
+    <div style="font-size:14px;margin:6px 0">${tp.items.map((x,k)=>`<span style="display:inline-block;background:#fff;border:1px solid var(--line);border-radius:12px;padding:3px 9px;margin:2px">${esc(x.en)} <a href="#" onclick="tplDelItem(${ti},${k});return false;" style="color:var(--maroon);text-decoration:none">✕</a></span>`).join(' ')||'<span class="muted">KOI ITEM NAHI</span>'}</div>
+    <div class="row"><input id="tpi${ti}" placeholder="NAYA ITEM" style="max-width:260px"><button class="sm" onclick="tplAddItem(${ti})">+ ITEM</button></div></div>`).join('')||'<p class="muted">ABHI KOI TEMPLATE NAHI</p>'}</div>`;
+}
+function tplRename(ti){
+  const t=db.templates[ti];if(!t)return;
+  askBoth('Template heading naam',t.en,'',(en)=>{
+    const up=en.toUpperCase();
+    if(db.templates.some((x,n)=>n!==ti&&x.en.toUpperCase()===up)){alert('"'+up+'" template pehle se hai');return;}
+    t.en=up;save();render();
+  });
+}
+function tplAddItem(ti){
+  const t=db.templates[ti];const v=(($('#tpi'+ti)||{}).value||'').trim().toUpperCase();
+  if(!t||!v)return;
+  if(t.items.some(x=>x.en.toUpperCase()===v)){alert('"'+v+'" ye item is template me pehle se hai');return;}
+  t.items.push({en:v,hi:''});save();render();
+}
+function tplDelItem(ti,k){const t=db.templates[ti];if(t){t.items.splice(k,1);save();render();}}
+
 function load(){return normUp(load0());}
 
 /* ---------- Stay connected to Drive, silent renew, logout ---------- */
@@ -887,6 +929,13 @@ async function pdfLines(file){
   }
   return out;
 }
+const DEF_PARTS=['Breakfast','Lunch','Hi-Tea','Dinner','Lunch Reception','Dinner Reception','Sangeet','Barat Swagat','Tea Stall','Mocktail Stall'];
+function canonPart(name){
+  let list=DEF_PARTS;
+  try{const a=JSON.parse(localStorage.getItem('samruddhi_particulars_list_v2')||'null');if(Array.isArray(a)&&a.length)list=a.map(x=>(x&&x.en)||x).filter(x=>typeof x==='string');}catch(e){}
+  const hit=list.find(x=>x.toUpperCase()===name.toUpperCase());
+  return hit||(name.charAt(0).toUpperCase()+name.slice(1).toLowerCase());
+}
 function parseQuote(lines){
   const txt=lines.join('\n');
   const g=re=>{const m=txt.match(re);return m?m[1].trim():'';};
@@ -901,7 +950,7 @@ function parseQuote(lines){
   };
   lines.forEach(L=>{
     const m=L.match(/^(?:(\d{1,2}\/[A-Za-z]{3}\/\d{4})\s+)?([A-Za-z][^\d]*?)\s+(\d+)\s+(\d+(?:\.\d+)?)\s+(?:₹\s*)?[\d,]+(?:\.\d+)?$/);
-    if(m&&!/TOTAL|ADVANCE|NET|AMOUNT/i.test(m[2]))q.billingRows.push({date:m[1]||'',particular:m[2].trim(),qty:m[3],rate:m[4]});
+    if(m&&!/TOTAL|ADVANCE|NET|AMOUNT/i.test(m[2]))q.billingRows.push({date:m[1]||'',particular:canonPart(m[2].trim()),qty:m[3],rate:m[4]});
   });
   return q;
 }
@@ -925,12 +974,12 @@ function parseMenu(lines){
     if(/^(DAY|MENU|TIME|MEMBER|RATE|DECORATION|REMARK|GUEST|FUNCTION|VENUE|MOBILE|SAMRUDDHI|EVENT|ADDRESS)/.test(L))return false;
     return nx==='MENU'||/^(TIME:|MEMBER:|RATE:|DECORATION|REMARK:)/.test(nx)||heads.includes(L);
   };
-  let day=null, sess=null, items=false;
+  let day=null, sess=null, items=false, curCat='';
   const grab=(L,k)=>{const m=L.match(new RegExp(k+':\\s*(.*?)(?=\\s+(TIME|MEMBER|RATE|DECORATION TYPE|REMARK):|$)','i'));return m?m[1].trim():'';};
   lines.forEach((raw,i)=>{
     const L=raw.trim();if(!L)return;
     const dm=L.match(/^DAY\s+(\d+)(?:\s+[—\-–]\s+(\d{1,2}\/[A-Za-z]{3}\/\d{4}))?/i);
-    if(dm){day={date:dm[2]||'',sessions:[]};out.days.push(day);sess=null;items=false;return;}
+    if(dm){day={date:dm[2]||'',sessions:[]};out.days.push(day);sess=null;items=false;curCat='';return;}
     if(isHead(i)){
       if(!day){day={date:'',sessions:[]};out.days.push(day);}
       sess={heading:L,time:'',member:'',decor:'',remark:'',items:[]};
@@ -948,8 +997,8 @@ function parseMenu(lines){
     if(items){
       let it=L.replace(/^[^A-Za-z0-9(]+/,'').trim();
       const c=cats.find(c=>it===c||it.startsWith(c+' '));
-      if(c)it=it.slice(c.length).trim();
-      if(it&&!/^(TOTAL|NOTE|SIGN)/i.test(it))sess.items.push(it);
+      if(c){curCat=c;it=it.slice(c.length).trim();}
+      if(it&&!/^(TOTAL|NOTE|SIGN)/i.test(it))sess.items.push({name:it,cat:curCat});
     }
   });
   return out;
@@ -968,6 +1017,16 @@ function restoreQuote(q){
   location.reload();
 }
 function restoreMenu(p){
+  const addMaster=(name,cat)=>{
+    const up=name.toUpperCase();
+    if(db.menu.some(c=>c.items.some(x=>x.en.toUpperCase()===up)))return;
+    const cu=(cat||'').toUpperCase();
+    let c=cu?db.menu.find(c=>c.en.toUpperCase()===cu):null;
+    if(!c&&cu){c={id:uid(),en:cu,hi:'',items:[]};db.menu.push(c);}
+    if(!c){c=db.menu.find(c=>c.en.toUpperCase()==='OTHER');if(!c){c={id:uid(),en:'OTHER',hi:'',items:[]};db.menu.push(c);}}
+    c.items.push({en:up,hi:''});
+  };
+  p.days.forEach(d=>d.sessions.forEach(s=>s.items.forEach(x=>addMaster(x.name,x.cat))));
   let g=db.guests.find(x=>(x.name||'').toUpperCase()===p.name.toUpperCase());
   if(!g){g={id:uid(),qno:'',name:'',mobile:'',address:'',ftype:'',fdate:'',venue:'',days:[]};db.guests.push(g);}
   g.name=p.name.toUpperCase();
@@ -978,35 +1037,43 @@ function restoreMenu(p){
   g.days=p.days.map(d=>({date:isoDate(d.date),sessions:d.sessions.map(s=>{
     let hd=db.headings.find(h=>h.en.toUpperCase()===s.heading.toUpperCase());
     if(!hd){hd={id:uid(),en:s.heading.toUpperCase(),hi:''};db.headings.push(hd);}
-    return {h:{en:hd.en,hi:''},time:s.time,member:s.member,rate:'',decor:s.decor,remark:s.remark,items:s.items.map(x=>({en:x.toUpperCase(),hi:''}))};
+    ensureTpl(hd.en);
+    return {h:{en:hd.en,hi:''},time:s.time,member:s.member,rate:'',decor:s.decor,remark:s.remark,items:s.items.map(x=>({en:x.name.toUpperCase(),hi:''}))};
   })}));
   save();
   go('menu',{gid:g.id});
 }
-async function pdfRestore(file){
+async function pdfRestore(file,kind){
   if(!file)return;
   const st=m=>{const e=document.getElementById('pdfStatus');if(e)e.textContent=m;};
   try{
     st('PDF padh rahe hain...');
     const lines=await pdfLines(file);
     const txt=lines.join('\n');
-    if(/Quote\s*No/i.test(txt)){
+    if(kind==='quote'||(!kind&&/Quote\s*No/i.test(txt))){
+      if(!/Quote\s*No/i.test(txt))throw new Error('Ye quotation PDF nahi lagti (Quote No nahi mila)');
       const q=parseQuote(lines);
       if(!q.quoteNo)throw new Error('Quotation number nahi mila');
-      if(!confirm('Quotation '+q.quoteNo+'\nGuest: '+q.guestName+'\nRows: '+q.billingRows.length+'\n\nIs quotation ko wapas bharein?'))return;
+      if(!q.billingRows.length){alert('Quotation rows nahi mili. PDF ka text:\n'+lines.filter(l=>/\d/.test(l)).slice(0,10).join('\n'));return;}
+      const prev=q.billingRows.slice(0,15).map(r=>r.particular+' : member '+r.qty+' , rate '+r.rate).join('\n');
+      if(!confirm('Quotation '+q.quoteNo+'\nGuest: '+q.guestName+'\n\n'+prev+'\n\nIn rows ko wapas bharein?'))return;
       restoreQuote(q);
-    }else if(/GUEST\s*NAME/i.test(txt)&&/MENU/i.test(txt)){
+    }else{
+      if(!/GUEST\s*NAME/i.test(txt)||!/MENU/i.test(txt))throw new Error('Ye menu PDF nahi lagti');
       const p=parseMenu(lines);
       if(!p.name)throw new Error('Guest ka naam nahi mila');
-      if(!confirm('Menu: '+p.name+'\nDays: '+p.days.length+'\n\nIs menu ko wapas bharein?'))return;
+      const nItems=p.days.reduce((a,d)=>a+d.sessions.reduce((b,s)=>b+s.items.length,0),0);
+      if(!confirm('Menu: '+p.name+'\nDays: '+p.days.length+'\nItems: '+nItems+'\n\nIs menu ko wapas bharein? Jo items menu list me nahi hain, wo apne aap add ho jayenge.'))return;
       restoreMenu(p);
-    }else throw new Error('Ye Samruddhi ki quotation ya menu PDF nahi lagti');
+    }
   }catch(e){st('⚠️ '+e.message);alert('PDF restore failed: '+e.message);}
 }
 function pdfCard(){
   return `<div class="card"><b>④ Purani PDF se data wapas laayein</b>
-    <p class="muted" style="font-size:13px">Quotation ya menu ki saved PDF chuniye. App usme se guest, rows aur menu padhkar data wapas bhar degi.</p>
-    <div class="acts"><button onclick="document.getElementById('pdfIn').click()">PDF upload karein</button><input id="pdfIn" type="file" accept="application/pdf" hidden onchange="pdfRestore(this.files[0])"></div>
+    <p class="muted" style="font-size:13px">Quotation PDF ya menu PDF alag-alag upload kijiye. Menu PDF me jo naye items hain, wo menu list me apne aap add ho jayenge.</p>
+    <div class="acts"><button onclick="document.getElementById('pdfQ').click()">Quotation PDF upload</button><button onclick="document.getElementById('pdfM').click()">Menu PDF upload</button>
+      <input id="pdfQ" type="file" accept="application/pdf" hidden onchange="pdfRestore(this.files[0],'quote');this.value=''">
+      <input id="pdfM" type="file" accept="application/pdf" hidden onchange="pdfRestore(this.files[0],'menu');this.value=''"></div>
     <p id="pdfStatus" class="muted" style="font-size:13px"></p></div>`;
 }
 
